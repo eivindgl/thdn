@@ -64,8 +64,6 @@
 #
 # TBD:
 #    * Handling errors, corner cases, unexpected events, etc.
-#    * Handle non-mono input
-#    * Handle other sample bit sizes other than 16 bit.
 #    * Better detection of frequency transitions.
 #    * Option to do faster search by only searching for integer Hz fundamentals.
 #    * Option to have THD+N relative to both fixed level and fundamental level.
