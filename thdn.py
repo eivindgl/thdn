@@ -73,38 +73,36 @@
 #    * Better interface
 
 import numpy as np
+import pysndfile
 
 def find_stationaries(fname):
-    import wave
+    xs, Fs, sample_size = pysndfile.sndio.read(fname, dtype=np.int32)
 
-    wf = wave.open(fname)
-
-    nchans = wf.getnchannels()
-    R      = wf.getsampwidth()
-    Fs     = wf.getframerate()
-    N      = wf.getnframes()
-
-    # support more bitwidths
-    x = np.fromstring(wf.readframes(N), {2:np.dtype('<i2')}[R]) / 2**(8*R-1)
+    # make it easy to loop through each channel
+    if len(xs.shape) == 1: # single channel
+        xs = [xs]
+    else: # more than 1 channel
+        xs = xs.T
 
     K = 1024*4
 
-    edge_trim = 3000
-    curr_first = edge_trim
-    while (curr_first+K) < (len(x)-edge_trim):
-        X = abs(np.fft.fft(x[curr_first:curr_first+K]))
-        NX = np.linalg.norm(X)
-        k = 1
-        while (curr_first+(k+1)*K) < (len(x)-edge_trim):
-            X_ = abs(np.fft.fft(x[curr_first+(k)*K:curr_first+(k+1)*K]))
-            if np.linalg.norm(X-X_)/NX > 0.2:
-                break
-            k = k + 1
+    for x in xs: # for each channel
+        edge_trim = 3000
+        curr_first = edge_trim
+        while (curr_first+K) < (len(x)-edge_trim):
+            X = abs(np.fft.fft(x[curr_first:curr_first+K]))
+            NX = np.linalg.norm(X)
+            k = 1
+            while (curr_first+(k+1)*K) < (len(x)-edge_trim):
+                X_ = abs(np.fft.fft(x[curr_first+(k)*K:curr_first+(k+1)*K]))
+                if np.linalg.norm(X-X_)/NX > 0.2:
+                    break
+                k = k + 1
 
-        if k*K > Fs*0.5:
-            yield (curr_first, curr_first+k*K, Fs, x[curr_first:(curr_first+k*K)])
+            if k*K > Fs*0.5:
+                yield (curr_first, curr_first+k*K, Fs, x[curr_first:(curr_first+k*K)])
 
-        curr_first = curr_first+(k+1)*K
+            curr_first = curr_first+(k+1)*K
 
 def thdn(x):
 
